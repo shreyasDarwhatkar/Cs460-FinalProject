@@ -63,57 +63,54 @@ public class AdvancedMurderBot implements AdvancedBot {
     public static synchronized Map<GameState.Position, DijkstraResult> dijkstraSearch(AdvancedGameState gameState) {
     	Map<GameState.Position, DijkstraResult> result = new HashMap<>();
         final Map<GameState.Position, Double> mapDistance = new HashMap<GameState.Position, Double>();
-        
-        Map<GameState.Position, Boolean> visitedMap = new HashMap<>();
-
-        DijkstraResult startingResult = new DijkstraResult(0, null);
-        
+        double hvalue= 0;
         PriorityQueue<GameState.Position> distQueue = new PriorityQueue<GameState.Position>(gameState.getBoardGraph().size(), new Comparator<GameState.Position>() {
 	        public int compare(GameState.Position p1,GameState.Position p2) {
 	            return (mapDistance.get(p1)>= mapDistance.get(p2)) ? (1): (-1);
 	        }
 	    });
         
+        Map<GameState.Position, Boolean> visitedMap = new HashMap<>();
+
+        DijkstraResult startingResult = new DijkstraResult(0, null);
+        
+        
         
         mapDistance.put(gameState.getMe().getPos(), 0.0);
-        //inQueue.put(gameState.getMe().getPos(), true);
+        
         distQueue.add(gameState.getMe().getPos());
         result.put(gameState.getMe().getPos(), startingResult);
-
         
-        double alt = 0;
         while(!distQueue.isEmpty()) {
             GameState.Position currentPosition = distQueue.poll();
             DijkstraResult currentResult = result.get(currentPosition);
             Vertex currentVertext = gameState.getBoardGraph().get(currentPosition);
             visitedMap.put(currentPosition, true);
             currentVertext.setValue(0);
-
-            // If there's a bot here, then this vertex goes nowhere
             if(gameState.getHeroesByPosition().containsKey(currentPosition)
                     && !currentPosition.equals(gameState.getMe().getPos()))
                 continue;
 
             int distance = currentResult.getDistance() + 1;
             //distance = curr + 1
-            
-
+     
             for(Vertex neighbor : currentVertext.getAdjacentVertices()) {
             	if(!visitedMap.containsKey(neighbor.getPosition())){
             		DijkstraResult neighborResult = result.get(neighbor.getPosition());
             		if(neighborResult == null) {
             			double xDiff=(currentPosition.getX() - neighbor.getPosition().getX())*currentPosition.getX() - (neighbor.getPosition().getX());
             			double yDiff=(currentPosition.getY() - neighbor.getPosition().getY())*(currentPosition.getY() - neighbor.getPosition().getY());
-            			alt = distance + Math.sqrt(xDiff+yDiff);
-            			mapDistance.put(neighbor.getPosition(), alt);
+            			hvalue = distance + Math.sqrt(xDiff+yDiff);
+            			neighbor.setValue(hvalue);
+            			mapDistance.put(neighbor.getPosition(), hvalue);
                         neighborResult = new DijkstraResult(distance, currentPosition);
                         result.put(neighbor.getPosition(), neighborResult);
                         distQueue.remove(neighbor.getPosition());
                         distQueue.add(neighbor.getPosition());
-                    } else if(mapDistance.get(neighbor.getPosition()) > alt) {
+                    } else if(mapDistance.get(neighbor.getPosition()) > hvalue) {
                         DijkstraResult newNeighborResult = new DijkstraResult(distance, currentPosition);
                         result.put(neighbor.getPosition(), newNeighborResult);
-                        mapDistance.put(neighbor.getPosition(), alt);
+                        mapDistance.put(neighbor.getPosition(), hvalue);
                         distQueue.remove(neighbor.getPosition());
                         distQueue.add(neighbor.getPosition());
                     }
